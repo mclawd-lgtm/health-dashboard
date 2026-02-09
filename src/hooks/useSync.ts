@@ -45,13 +45,21 @@ export function useHabits(): UseHabitsReturn {
     setError(null);
     
     try {
-      const data = await getHabits(user.id);
+      // Add timeout to prevent hanging on IndexedDB
+      const habitsPromise = getHabits(user.id);
+      const timeoutPromise = new Promise<Habit[]>((_, reject) => 
+        setTimeout(() => reject(new Error('Database timeout')), 5000)
+      );
+      const data = await Promise.race([habitsPromise, timeoutPromise]);
+      
       if (isMounted.current) {
         setHabits(data);
       }
     } catch (err) {
       if (isMounted.current) {
         setError(err instanceof Error ? err.message : 'Failed to load habits');
+        // Set empty habits on error so UI can still show "Add Habit"
+        setHabits([]);
       }
     } finally {
       if (isMounted.current) {
@@ -65,7 +73,13 @@ export function useHabits(): UseHabitsReturn {
     
     setSyncStatus('syncing');
     try {
-      const result = await fullSync(user.id);
+      // Add timeout to prevent hanging
+      const syncPromise = fullSync(user.id);
+      const timeoutPromise = new Promise<{success: boolean; errors: string[]}>((_, reject) => 
+        setTimeout(() => reject(new Error('Sync timeout')), 10000)
+      );
+      const result = await Promise.race([syncPromise, timeoutPromise]);
+      
       if (result.success) {
         setSyncStatus('idle');
         setLastSyncAt(new Date().toISOString());
@@ -77,6 +91,8 @@ export function useHabits(): UseHabitsReturn {
     } catch (err) {
       setSyncStatus('error');
       console.error('Sync failed:', err);
+      // Don't block UI on sync error - just use local data
+      await fetchHabits();
     }
   }, [user?.id, isAuthenticated, fetchHabits]);
 
