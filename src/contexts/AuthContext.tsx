@@ -12,9 +12,11 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Fixed UUID matching the real Supabase user
+// This allows RLS policies to work without full auth flow
 const DEV_USER: User = {
-  id: 'mausam',
-  email: 'mausam@local.dev',
+  id: '895cd28a-37ea-443c-b7bb-eca88c857d05',
+  email: 'mausampatel111@gmail.com',
   app_metadata: {},
   user_metadata: {},
   aud: 'authenticated',
