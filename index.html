@@ -72,11 +72,14 @@
         
         try {
           var xhr = new XMLHttpRequest();
-          xhr.open('GET', '/mausam-master-dashboard/assets/index-B52rKrIy.js', false);
+          // Get the actual JS file path from the script tag
+          var scripts = document.querySelectorAll('script[src*="/assets/"]');
+          var jsPath = scripts.length > 0 ? scripts[0].src : '/mausam-master-dashboard/assets/index-MMb1ePju.js';
+          xhr.open('HEAD', jsPath, false);
           xhr.send();
           logs.push('JS bundle: ' + (xhr.status === 200 ? 'OK' : 'FAIL ' + xhr.status));
         } catch(e) {
-          logs.push('JS bundle: FAIL');
+          logs.push('JS bundle: FAIL - ' + e.message);
         }
         
         debug.innerHTML = logs.map(function(l) { return '<div>' + l + '</div>'; }).join('');
