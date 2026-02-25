@@ -86,21 +86,39 @@ function App() {
   const [activeTab, setActiveTab] = useState<Tab>('health');
   const { isLoading: authLoading } = useAuth();
   const [migrationsRun, setMigrationsRun] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string[]>([]);
+
+  // Debug logging
+  useEffect(() => {
+    const logs: string[] = [];
+    logs.push(`Time: ${new Date().toISOString()}`);
+    logs.push(`UserAgent: ${navigator.userAgent.slice(0, 50)}...`);
+    logs.push(`Screen: ${window.innerWidth}x${window.innerHeight}`);
+    logs.push(`localStorage: ${typeof localStorage !== 'undefined' ? 'OK' : 'N/A'}`);
+    
+    try {
+      localStorage.setItem('test', '1');
+      localStorage.removeItem('test');
+      logs.push('localStorage write: OK');
+    } catch (e) {
+      logs.push(`localStorage error: ${e}`);
+    }
+    
+    setDebugInfo(logs);
+    console.log('[App] Debug:', logs);
+  }, []);
 
   // Run migrations on mount
   useEffect(() => {
+    console.log('[App] Starting migrations...');
     runMigrations().then((result) => {
-      if (result.applied > 0) {
-        console.log(`[Migrations] Applied ${result.applied} migration(s)`);
-      }
-      if (result.errors.length > 0) {
-        console.error('[Migrations] Errors:', result.errors);
-      }
-    }).finally(() => {
+      console.log('[App] Migrations done:', result);
+      setMigrationsRun(true);
+    }).catch((err) => {
+      console.error('[App] Migrations failed:', err);
+      setDebugInfo(prev => [...prev, `Migration error: ${err.message}`]);
       setMigrationsRun(true);
     });
-    // Force render after 2s even if migrations hang
-    setTimeout(() => setMigrationsRun(true), 2000);
   }, []);
 
   const clearLegacyData = useCallback(() => {
@@ -113,13 +131,24 @@ function App() {
     }
   }, []);
 
-  // Show loading state
+  // Show loading state with debug
   if (authLoading || !migrationsRun) {
     return (
       <>
         <Favicon />
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0d1117]">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#58a6ff]" />
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0d1117] p-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#58a6ff] mb-4" />
+          <p className="text-[#8b949e] text-sm mb-4">Loading...</p>
+          
+          {/* Debug info visible on screen */}
+          <div className="bg-[#161b22] border border-[#30363d] rounded-lg p-3 max-w-sm w-full">
+            <p className="text-xs text-[#8b949e] mb-2">Debug:</p>
+            {debugInfo.map((log, i) => (
+              <p key={i} className="text-xs text-[#6e7681] font-mono break-all">
+                {log}
+              </p>
+            ))}
+          </div>
         </div>
       </>
     );
