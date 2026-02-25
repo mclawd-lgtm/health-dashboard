@@ -25,6 +25,21 @@
         margin-right: 12px;
       }
       @keyframes spin { to { transform: rotate(360deg); } }
+      #debug {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        background: #161b22;
+        border: 1px solid #30363d;
+        border-radius: 8px;
+        padding: 12px;
+        color: #8b949e;
+        font-family: monospace;
+        font-size: 11px;
+        z-index: 9999;
+      }
+      #debug div { margin: 2px 0; }
     </style>
   </head>
   <body>
@@ -34,6 +49,37 @@
         <span>Loading...</span>
       </div>
     </div>
+    <div id="debug"></div>
+    
+    <script>
+      // Pre-React debug
+      (function() {
+        var debug = document.getElementById('debug');
+        var logs = [];
+        logs.push('JS: ' + (typeof window !== 'undefined' ? 'OK' : 'FAIL'));
+        logs.push('UA: ' + navigator.userAgent.slice(0, 40));
+        logs.push('Screen: ' + window.innerWidth + 'x' + window.innerHeight);
+        
+        try {
+          localStorage.setItem('_test', '1');
+          localStorage.removeItem('_test');
+          logs.push('localStorage: OK');
+        } catch(e) {
+          logs.push('localStorage: FAIL - ' + e.message);
+        }
+        
+        try {
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', '/assets/index-B52rKrIy.js', false);
+          xhr.send();
+          logs.push('JS bundle: ' + (xhr.status === 200 ? 'OK' : 'FAIL ' + xhr.status));
+        } catch(e) {
+          logs.push('JS bundle: FAIL');
+        }
+        
+        debug.innerHTML = logs.map(function(l) { return '<div>' + l + '</div>'; }).join('');
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
