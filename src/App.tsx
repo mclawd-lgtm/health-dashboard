@@ -111,14 +111,27 @@ function App() {
   // Run migrations on mount
   useEffect(() => {
     console.log('[App] Starting migrations...');
+    
+    // Set a timeout to force progress if migrations hang
+    const timeout = setTimeout(() => {
+      console.log('[App] Migration timeout - forcing continue');
+      setDebugInfo(prev => [...prev, 'Migration timeout - forcing']);
+      setMigrationsRun(true);
+    }, 3000);
+    
     runMigrations().then((result) => {
+      clearTimeout(timeout);
       console.log('[App] Migrations done:', result);
+      setDebugInfo(prev => [...prev, `Migrations done: ${result.success}`]);
       setMigrationsRun(true);
     }).catch((err) => {
+      clearTimeout(timeout);
       console.error('[App] Migrations failed:', err);
       setDebugInfo(prev => [...prev, `Migration error: ${err.message}`]);
       setMigrationsRun(true);
     });
+    
+    return () => clearTimeout(timeout);
   }, []);
 
   const clearLegacyData = useCallback(() => {
@@ -143,6 +156,8 @@ function App() {
           {/* Debug info visible on screen */}
           <div className="bg-[#161b22] border border-[#30363d] rounded-lg p-3 max-w-sm w-full">
             <p className="text-xs text-[#8b949e] mb-2">Debug:</p>
+            <p className="text-xs text-[#6e7681] font-mono">authLoading: {authLoading ? 'true' : 'false'}</p>
+            <p className="text-xs text-[#6e7681] font-mono">migrationsRun: {migrationsRun ? 'true' : 'false'}</p>
             {debugInfo.map((log, i) => (
               <p key={i} className="text-xs text-[#6e7681] font-mono break-all">
                 {log}
